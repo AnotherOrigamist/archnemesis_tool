@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Archnemesis</title>
+<style>
+table {
+  border-collapse: collapse;
+}
+tr, td {
+  border: 1px solid black;
+  padding: .2em;
+}
+</style>
+</head>
+<body>
+
+<h1>Archnemesis</h1>
+<div id="progress"></div>
+<p/>
+<div id="archnemesis_combo"></div>
+<p/>
+<div id="archnemesis"></div>
+<script>
+function archnemesis_table(archnemesis) {
+  archnemesis_html="";
+  archnemesis_html+="<table style=\"\">";
+  archnemesis_html+="<tr><td>Index</td><td>Name</td><td>Tier</td><td>Base Components</td><td>Reward</td><td>Component</td></tr>";
+  for (let i = 0; i < archnemesis.length; i++) {
+    archnemesis_html+="<tr>";
+    archnemesis_html+="<td>"+i+"</td>";
+    archnemesis_html+="<td>"+archnemesis[i].name+"</td>";
+    archnemesis_html+="<td>"+archnemesis[i].tier+"</td>";
+    archnemesis_html+="<td>"+archnemesis[i].count+"</td>";
+    archnemesis_html+="<td>"+archnemesis[i].reward+"</td>";
+    archnemesis_html+="<td>"+archnemesis[i].component+"</td>";
+    archnemesis_html+="</tr>";
+  }
+  archnemesis_html+="</table>";
+  return archnemesis_html;
+}
+
+function archnemesis_combo_table(archnemesis_combo) {
+  archnemesis_combo_html="";
+  archnemesis_combo_html+="<table style=\"\">";
+  archnemesis_combo_html+="<tr><td>Sequence</td><td>Value</td><td>Value/Count</td><td>Base Components</td><td>Rerolls</td><td>Reward Acumulative</td><td>Value Last</td><td>Reward Last</td></tr>";
+  for (let i = 0; i < archnemesis_combo.length; i++) {
+    archnemesis_combo_html+="<tr>";
+    archnemesis_combo_html+="<td>"+archnemesis_combo[i].sequence+"</td>";
+    archnemesis_combo_html+="<td>"+archnemesis_combo[i].reward_acumulative_value.toFixed(2)+"</td>";
+    archnemesis_combo_html+="<td>"+(archnemesis_combo[i].reward_acumulative_value/archnemesis_combo[i].count).toFixed(2)+"</td>";
+    archnemesis_combo_html+="<td>"+archnemesis_combo[i].count+"</td>";
+    archnemesis_combo_html+="<td>"+archnemesis_combo[i].rerolls+"</td>";
+    archnemesis_combo_html+="<td>"+archnemesis_combo[i].reward_acumulative+"</td>";
+    archnemesis_combo_html+="<td>"+archnemesis_combo[i].reward_value.toFixed(2)+"</td>";
+    archnemesis_combo_html+="<td>"+archnemesis_combo[i].reward_str+"</td>";
+    archnemesis_combo_html+="</tr>";
+  }
+  archnemesis_combo_html+="</table>";
+  return archnemesis_combo_html;
+}
+
+function find_by_name(name) {
+  for (let i = 0; i < archnemesis.length; i++) {
+    if (archnemesis[i].name == name){
+      return i;
+    }
+  }
+  return -1;
+}
+
+function archnemesis_preprosses() {
+  for (let i = 0; i < archnemesis.length; i++) {
+    archnemesis[i].component_index = [];
+    if (archnemesis[i].component.length == 0){
+      archnemesis[i].tier = 1;
+      archnemesis[i].count = 1;
+    }else{
+      for (let j = 0; j < archnemesis[i].component.length; j++) {
+        archnemesis[i].component_index[j] = find_by_name(archnemesis[i].component[j]);
+      }
+      archnemesis[i].tier = archnemesis[archnemesis[i].component_index[0]].tier + 1;
+      archnemesis[i].count = 0;
+      for (let j = 0; j < archnemesis[i].component.length; j++) {
+        archnemesis[i].count += archnemesis[archnemesis[i].component_index[j]].count;
+      }
+    }
+  }
+}
+
+function archnemesis_combo_gen(first) {
+  i = first;
+  for (let j = 1; j < archnemesis.length; j++) {
+    if (i==j) continue;
+    for (let k = 1; k < archnemesis.length; k++) {
+      if (i==k | j==k) continue;
+      for (let l = 1; l < archnemesis.length; l++) {
+        if (i==l | j==l | k==l) continue;
+        archnemesis_combo.push({seq:[i,j,k,l]});
+      }
+    }
+  }
+}
+
+function reward_str(reward) {
+  let reward_str = ""
+  let reward_keys = Object.keys(reward)
+  for (let k = 0; k < reward_keys.length; k++) {
+    reward_str += reward_keys[k]+":"+reward[reward_keys[k]]+" ";
+  }
+  return reward_str;
+}
+
+function reward_value(reward, rerolls) {
+  let value = 0
+  let reward_keys = Object.keys(reward)
+  for (let k = 0; k < reward_keys.length; k++) {
+    let reward_value = 0
+    if (reward_keys[k] == "Currency"){
+      reward_value += 1;
+    }else if(reward_keys[k] == "Generic"){
+      reward_value += .2;
+    }else if(reward_keys[k] == "Essence"){
+      reward_value += .4;
+    }else if(reward_keys[k] == "Fossil"){
+      reward_value += .4;
+    }else if(reward_keys[k] == "Divination"){
+      reward_value += .5;
+    }else if(reward_keys[k] == "Harbinger"){
+      reward_value += .2;
+    }else if(reward_keys[k] == "Fragment"){
+      reward_value += .2;
+    }else if(reward_keys[k] == "Scarab"){
+      reward_value += 2;
+    }else if(reward_keys[k] == "Random"){
+      reward_value += .2;
+    }
+    value += reward_value * reward[reward_keys[k]];
+  }
+  let rerolls_factor = Math.pow(1.2,rerolls)
+  return value*rerolls_factor;
+}
+
+function archnemesis_combo_prosses() {
+  for (let i = 0; i < archnemesis_combo.length; i++) {
+    archnemesis_combo[i].sequence = [];
+    archnemesis_combo[i].reward = {};
+    archnemesis_combo[i].reward_acumulative = {};
+    archnemesis_combo[i].value = 0;
+    archnemesis_combo[i].count = 0;
+    archnemesis_combo[i].rerolls = 0;
+    archnemesis_combo[i].additional_all = 0;
+    archnemesis_combo[i].all_div = 0;
+    archnemesis_combo[i].all_unique = 0;
+    archnemesis_combo[i].all_currency = 0;
+    archnemesis_combo[i].all_doubled = 0;
+    for (let j = 0; j < archnemesis_combo[i].seq.length; j++) {
+      let id = archnemesis_combo[i].seq[j];
+      archnemesis_combo[i].sequence.push(archnemesis[id].name);
+      archnemesis_combo[i].count += archnemesis[id].count;
+
+      for (let k = 0; k < archnemesis[id].reward.length; k++) {
+        let reward_type = archnemesis[id].reward[k];
+        if (!(reward_type in archnemesis_combo[i].reward))
+          archnemesis_combo[i].reward[reward_type] = 0;
+        archnemesis_combo[i].reward[reward_type] += 1;
+      }
+      
+      if (archnemesis[id].name == "Rejuvenating")
+        archnemesis_combo[i].rerolls += 1
+      else if (archnemesis[id].name == "Mirror Image")
+        archnemesis_combo[i].rerolls += 2
+      else if (archnemesis[id].name == "Magma Barrier")
+        archnemesis_combo[i].rerolls += 2
+      else if (archnemesis[id].name == "Mana Siphoner")
+        archnemesis_combo[i].rerolls += 1
+      else if (archnemesis[id].name == "Empowered Elements")
+        archnemesis_combo[i].rerolls += 1
+      else if (archnemesis[id].name == "Effigy")
+        archnemesis_combo[i].rerolls += 1
+      else if (archnemesis[id].name == "Brine King-Touched")
+        archnemesis_combo[i].rerolls += 6
+      else if (archnemesis[id].name == "Tukohama-Touched")
+        archnemesis_combo[i].rerolls += 4
+      else if (archnemesis[id].name == "Abberath-Touched")
+        archnemesis_combo[i].rerolls += 4
+      else if (archnemesis[id].name == "Treant Hoard"){
+        if (!("Random" in archnemesis_combo[i].reward))
+          archnemesis_combo[i].reward["Random"] = 0;
+        archnemesis_combo[i].reward["Random"] += 8
+      }else if ((archnemesis[id].name == "Lunaris-Touched") |
+                (archnemesis[id].name == "Solaris-Touched")){
+        archnemesis_combo[i].additional_all += 1
+      }else if (archnemesis[id].name == "Arakaali-Touched"){
+        archnemesis_combo[i].all_div = 1;
+      }else if (archnemesis[id].name == "Shakari-Touched"){
+        archnemesis_combo[i].all_unique = 1;
+      }else if (archnemesis[id].name == "Innocence-Touched"){
+        archnemesis_combo[i].all_currency = 1;
+      }else if (archnemesis[id].name == "Kitava-Touched"){
+        archnemesis_combo[i].all_doubled = 1;
+      }
+      
+      let reward_keys = Object.keys(archnemesis_combo[i].reward);
+      let reward_to_acumulate = []
+      for (let k = 0; k < reward_keys.length; k++) {
+        reward_to_acumulate[reward_keys[k]] = archnemesis_combo[i].reward[reward_keys[k]];
+      }
+      
+      if(archnemesis_combo[i].additional_all > 0){
+        for (let k = 0; k < reward_keys.length; k++) {
+          reward_to_acumulate[reward_keys[k]] += archnemesis_combo[i].additional_all;
+        }
+      }
+      
+      if ((archnemesis_combo[i].all_div > 0) |
+          (archnemesis_combo[i].all_unique > 0) |
+          (archnemesis_combo[i].all_currency > 0)){
+        let total = 0
+        for (let k = 0; k < reward_keys.length; k++) {
+          total += reward_to_acumulate[reward_keys[k]];
+        }
+        
+        if(archnemesis_combo[i].all_div > 0)
+          reward_to_acumulate = {"Divination":total};
+        else if(archnemesis_combo[i].all_unique > 0)
+          reward_to_acumulate = {"Unique":total};
+        else if(archnemesis_combo[i].all_currency > 0)
+          reward_to_acumulate = {"Currency":total};
+        
+        reward_keys = Object.keys(reward_to_acumulate);
+      }
+      
+      if(archnemesis_combo[i].all_doubled > 0){
+        for (let k = 0; k < reward_keys.length; k++) {
+          reward_to_acumulate[reward_keys[k]] *= 2;
+        }
+      }
+
+      for (let k = 0; k < reward_keys.length; k++) {
+        if (!(reward_keys[k] in archnemesis_combo[i].reward_acumulative))
+          archnemesis_combo[i].reward_acumulative[reward_keys[k]] = 0;
+        archnemesis_combo[i].reward_acumulative[reward_keys[k]] += reward_to_acumulate[reward_keys[k]];
+      }
+      
+      if (j == archnemesis_combo[i].seq.length -1)
+        archnemesis_combo[i].reward = reward_to_acumulate;
+    }
+
+    archnemesis_combo[i].reward_value = reward_value(archnemesis_combo[i].reward, archnemesis_combo[i].rerolls);
+    archnemesis_combo[i].reward_str = reward_str(archnemesis_combo[i].reward);
+    archnemesis_combo[i].reward_acumulative_value = reward_value(archnemesis_combo[i].reward_acumulative, archnemesis_combo[i].rerolls);
+    archnemesis_combo[i].reward_acumulative = reward_str(archnemesis_combo[i].reward_acumulative);
+  }
+}
+
+
+let archnemesis = [{name:"Toxic"              , reward:["Generic"    , "Gem"                                     ], component:[                                                                                    ]},
+                   {name:"Deadeye"            , reward:["Generic"    , "Jewellery"                               ], component:[                                                                                    ]},
+                   {name:"Arcane Buffer"      , reward:["Essence"                                                ], component:[                                                                                    ]},
+                   {name:"Echoist"            , reward:["Generic"    , "Currency"                                ], component:[                                                                                    ]},
+                   {name:"Dynamo"             , reward:["Generic"     , "Jewellery"                              ], component:[                                                                                    ]},
+                   {name:"Bloodletter"        , reward:["Weapon"     , "Jewellery"                               ], component:[                                                                                    ]},
+                   {name:"Steel-Infused"      , reward:["Weapon"                                                 ], component:[                                                                                    ]},
+                   {name:"Gargantuan"         , reward:["Currency"                                               ], component:[                                                                                    ]},
+                   {name:"Berserker"          , reward:["Unique"                                                 ], component:[                                                                                    ]},
+                   {name:"Sentinel"           , reward:["Armour"     , "Armour"                                  ], component:[                                                                                    ]},
+                   {name:"Vampiric"           , reward:["Fossil"                                                 ], component:[                                                                                    ]},
+                   {name:"Soul Conduit"       , reward:["Map"                                                    ], component:[                                                                                    ]},
+                   {name:"Frenzied"           , reward:["Generic"    , "Unique"                                  ], component:[                                                                                    ]},
+                   {name:"Juggernaut"         , reward:["Harbinger"                                              ], component:[                                                                                    ]},
+                   {name:"Malediction"        , reward:["Divination"                                             ], component:[                                                                                    ]},
+                   {name:"Consecrator"        , reward:["Fragment"                                               ], component:[                                                                                    ]},
+                   {name:"Overcharged"        , reward:["Jewellery"  , "Jewellery"                               ], component:[                                                                                    ]},
+                   {name:"Chaosweaver"        , reward:["Gem"                                                    ], component:[                                                                                    ]},
+                   {name:"Frostweaver"        , reward:["Armour"                                                 ], component:[                                                                                    ]},
+                   {name:"Permafrost"         , reward:["Generic"    , "Armour"                                  ], component:[                                                                                    ]},
+                   {name:"Hasted"             , reward:["Generic"                                                ], component:[                                                                                    ]},
+                   {name:"Bombadier"          , reward:["Weapon"     , "Armour"                                  ], component:[                                                                                    ]},
+                   {name:"Flameweaver"        , reward:["Weapon"                                                 ], component:[                                                                                    ]},
+                   {name:"Incendiary"         , reward:["Generic"    , "Weapon"                                  ], component:[                                                                                    ]},
+                   {name:"Stormweaver"        , reward:["Jewellery"                                              ], component:[                                                                                    ]},
+                   {name:"Bonebreaker"        , reward:["Generic"     , "Weapon"                                 ], component:[                                                                                    ]},
+                   {name:"Heralding Minions"  , reward:["Fragment"   , "Fragment"                                ], component:["Dynamo"           , "Arcane Buffer"                                                ]},
+                   {name:"Assassin"           , reward:["Currency"   , "Currency"                                ], component:["Deadeye"          , "Vampiric"                                                     ]},
+                   {name:"Rejuvenating"       , reward:["Currency"                                               ], component:["Gargantuan"       , "Vampiric"                                                     ]},
+                   {name:"Executioner"        , reward:["Legion"     , "Breach"                                  ], component:["Frenzied"         , "Berserker"        , "Echoist"                                 ]},
+                   {name:"Treant Hoard"       , reward:["Generic"                                                ], component:["Toxic"            , "Sentinel"         , "Steel-Infused"                           ]},
+                   {name:"Mirror Image"       , reward:["Scarab"                                                 ], component:["Echoist"          , "Soul Conduit"                                                 ]},
+                   {name:"Entangler"          , reward:["Fossil"     , "Fossil"                                  ], component:["Toxic"            , "Bloodletter"                                                  ]},
+                   {name:"Trickster"          , reward:["Currency"   , "Unique"     , "Divination"               ], component:["Overcharged"      , "Assassin"                                                     ]},
+                   {name:"Necromancer"        , reward:["Generic"                                                ], component:["Bombadier"        , "Overcharged"                                                  ]},
+                   {name:"Hexer"              , reward:["Essence"    , "Essence"                                 ], component:["Chaosweaver"      , "Echoist"                                                      ]},
+                   {name:"Drought Bringer"    , reward:["Lab"        , "Lab"                                     ], component:["Malediction"      , "Deadeye"                                                      ]},
+                   {name:"Temporal Bubble"    , reward:["Heist"      , "Expedition"                              ], component:["Juggernaut"       , "Hexer"            , "Arcane Buffer"                           ]},
+                   {name:"Frost Strider"      , reward:["Armour"     , "Armour"     , "Armour"                   ], component:["Frostweaver"      , "Hasted"                                                       ]},
+                   {name:"Ice Prison"         , reward:["Armour"     , "Armour"                                  ], component:["Permafrost"       , "Sentinel"                                                     ]},
+                   {name:"Soul Eater"         , reward:["Map"        , "Map"                                     ], component:["Soul Conduit"     , "Necromancer"      , "Gargantuan"                              ]},
+                   {name:"Flame Strider"      , reward:["Weapon"     , "Weapon"     , "Weapon"                   ], component:["Frostweaver"      , "Hasted"                                                       ]},
+                   {name:"Corpse Detonator"   , reward:["Divination" , "Divination"                              ], component:["Necromancer"      , "Incendiary"                                                   ]},
+                   {name:"Evocationist"       , reward:["Generic"    , "Weapon"     , "Armour"     , "Jewellery" ], component:["Flameweaver"      , "Frostweaver"      , "Stormweaver"                             ]},
+                   {name:"Magma Barrier"      , reward:["Weapon"     , "Weapon"                                  ], component:["Incendiary"       , "Bonebreaker"                                                  ]},
+                   {name:"Storm Strider"      , reward:["Jewellery"  , "Jewellery"  , "Jewellery"                ], component:["Stormweaver"      , "Hasted"                                                       ]},
+                   {name:"Mana Siphoner"      , reward:["Jewellery"  , "Jewellery"                               ], component:["Consecrator"      , "Dynamo"                                                       ]},
+                   {name:"Corrupter"          , reward:["Abyss"      , "Abyss"                                   ], component:["Bloodletter"      , "Chaosweaver"                                                  ]},
+                   {name:"Invulnerable"       , reward:["Delirium"   , "Metamorph"                               ], component:["Sentinel"         , "Juggernaut"       , "Consecrator"                             ]},
+                   {name:"Crystal-Skinned"    , reward:["Harbinger"  , "Harbinger"                               ], component:["Permafrost"       , "Rejuvenating"     , "Berserker"                               ]},
+                   {name:"Empowered Elements" , reward:["Unique"     , "Unique"                                  ], component:["Evocationist"     , "Steel-Infused"    , "Chaosweaver"                             ]},
+                   {name:"Effigy"             , reward:["Divination" , "Divination"                              ], component:["Hexer"            , "Malediction"      , "Corrupter"                               ]},
+                   {name:"Empowering Minions" , reward:["Blight"     , "Ritual"                                  ], component:["Necromancer"      , "Executioner"      , "Gargantuan"                              ]},
+                   {name:"Lunaris-Touched"    , reward:["Unique"                                                 ], component:["Invulnerable"     , "Frost Strider"    , "Empowering Minions"                      ]},
+                   {name:"Solaris-Touched"    , reward:["Scarab"                                                 ], component:["Invulnerable"     , "Magma Barrier"    , "Empowering Minions"                      ]},
+                   {name:"Arakaali-Touched"   , reward:["Divination"                                             ], component:["Corpse Detonator" , "Entangler"        , "Assassin"                                ]},
+                   {name:"Brine King-Touched" , reward:["Armour"     , "Armour"     , "Armour"                   ], component:["Ice Prison"       , "Storm Strider"    , "Heralding Minions"                       ]},
+                   {name:"Tukohama-Touched"   , reward:["Weapon"     , "Weapon"     , "Fragment"                 ], component:["Bonebreaker"      , "Executioner"      , "Magma Barrier"                           ]},
+                   {name:"Abberath-Touched"   , reward:["Jewellery"  , "Jewellery"  , "Map"                      ], component:["Flame Strider"    , "Frenzied"         , "Rejuvenating"                            ]},
+                   {name:"Shakari-Touched"    , reward:["Unique"                                                 ], component:["Entangler"        , "Soul Eater"       , "Drought Bringer"                         ]},
+                   {name:"Innocence-Touched"  , reward:["Currency"   , "Currency"   , "Currency"                 ], component:["Lunaris-Touched"  , "Solaris-Touched"  , "Mirror Image"       , "Mana Siphoner"    ]},
+                   {name:"Kitava-Touched"     , reward:["Generic"                                                ], component:["Tukohama-Touched" , "Abberath-Touched" , "Corrupter"          , "Corpse Detonator" ]}];
+
+let archnemesis_combo = [];
+let archnemesis_combo_last = [];
+let first = 0;
+
+function archnemesis_combo_raund() {
+  document.getElementById("progress").innerHTML = (first+1)+"/"+archnemesis.length;
+
+  archnemesis_combo_gen(first);
+  archnemesis_combo_prosses();
+
+  archnemesis_combo.sort((a, b) => (a.reward_acumulative_value < b.reward_acumulative_value) ? 1 : -1)
+  archnemesis_combo = archnemesis_combo.slice(0,10)
+  
+  archnemesis_combo = archnemesis_combo.concat(archnemesis_combo_last)
+  archnemesis_combo.sort((a, b) => (a.reward_acumulative_value < b.reward_acumulative_value) ? 1 : -1)
+  archnemesis_combo = archnemesis_combo.slice(0,10)
+  
+
+  document.getElementById("archnemesis").innerHTML = archnemesis_table(archnemesis);
+  document.getElementById("archnemesis_combo").innerHTML = archnemesis_combo_table(archnemesis_combo);
+
+  archnemesis_combo_last = archnemesis_combo;
+  archnemesis_combo = [];
+  
+  first +=1
+  if (first < archnemesis.length)
+    setTimeout(archnemesis_combo_raund, 1000);
+}
+
+archnemesis_preprosses();
+archnemesis_combo_raund()
+
+</script>
+</body>
+</html>
