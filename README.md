@@ -1,6 +1,7 @@
 # archnemesis_tool
 
 Current Value calculation
+```
 Currency 1
 Generic 0.2
 Essence 0.4
@@ -12,3 +13,4 @@ Scarab 2
 Random 0.2
 
 Each reroll multiplies the result by 1.2
+```
