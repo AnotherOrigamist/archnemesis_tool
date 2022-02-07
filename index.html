@@ -42,12 +42,12 @@ function archnemesis_table(archnemesis) {
 function archnemesis_combo_table(archnemesis_combo) {
   archnemesis_combo_html="";
   archnemesis_combo_html+="<table style=\"\">";
-  archnemesis_combo_html+="<tr><td>Sequence</td><td>Value</td><td>Value/Count</td><td>Base Components</td><td>Rerolls</td><td>Reward Acumulative</td><td>Value Last</td><td>Reward Last</td></tr>";
+  archnemesis_combo_html+="<tr><td>Sequence</td><td>Value</td><td>Value/Base Components</td><td>Base Components</td><td>Rerolls</td><td>Reward Acumulative</td><td>Value Last</td><td>Reward Last</td></tr>";
   for (let i = 0; i < archnemesis_combo.length; i++) {
     archnemesis_combo_html+="<tr>";
     archnemesis_combo_html+="<td>"+archnemesis_combo[i].sequence+"</td>";
     archnemesis_combo_html+="<td>"+archnemesis_combo[i].reward_acumulative_value.toFixed(2)+"</td>";
-    archnemesis_combo_html+="<td>"+(archnemesis_combo[i].reward_acumulative_value/archnemesis_combo[i].count).toFixed(2)+"</td>";
+    archnemesis_combo_html+="<td>"+archnemesis_combo[i].ratio.toFixed(2)+"</td>";
     archnemesis_combo_html+="<td>"+archnemesis_combo[i].count+"</td>";
     archnemesis_combo_html+="<td>"+archnemesis_combo[i].rerolls+"</td>";
     archnemesis_combo_html+="<td>"+archnemesis_combo[i].reward_acumulative+"</td>";
@@ -110,6 +110,55 @@ function reward_str(reward) {
   return reward_str;
 }
 
+function rerolls_factor(rerolls) {
+  let rerolls_factor = 1
+  switch(rerolls) {
+    case 1:  
+      rerolls_factor = 1.333;
+      break;
+    case 2:  
+      rerolls_factor = 1.500;
+      break;
+    case 3:  
+      rerolls_factor = 1.600;
+      break;
+    case 4:  
+      rerolls_factor = 1.667;
+      break;
+    case 5:  
+      rerolls_factor = 1.714;
+      break;
+    case 6:  
+      rerolls_factor = 1.750;
+      break;
+    case 7:  
+      rerolls_factor = 1.778;
+      break;
+    case 8:  
+      rerolls_factor = 1.800;
+      break;
+    case 9:  
+      rerolls_factor = 1.818;
+      break;
+    case 10: 
+      rerolls_factor = 1.833;
+      break;
+    case 11: 
+      rerolls_factor = 1.846;
+      break;
+    case 12: 
+      rerolls_factor = 1.857;
+      break;
+    case 13: 
+      rerolls_factor = 1.867;
+      break;
+    case 14: 
+      rerolls_factor = 1.875;
+      break;
+  }
+  return rerolls_factor;
+}
+
 function reward_value(reward, rerolls) {
   let value = 0
   let reward_keys = Object.keys(reward)
@@ -136,10 +185,9 @@ function reward_value(reward, rerolls) {
     }
     value += reward_value * reward[reward_keys[k]];
   }
-  let rerolls_factor = Math.pow(1.2,rerolls)
-  return value*rerolls_factor;
+  return value * rerolls_factor(rerolls);
 }
-
+  
 function archnemesis_combo_prosses() {
   for (let i = 0; i < archnemesis_combo.length; i++) {
     archnemesis_combo[i].sequence = [];
@@ -250,6 +298,7 @@ function archnemesis_combo_prosses() {
     archnemesis_combo[i].reward_str = reward_str(archnemesis_combo[i].reward);
     archnemesis_combo[i].reward_acumulative_value = reward_value(archnemesis_combo[i].reward_acumulative, archnemesis_combo[i].rerolls);
     archnemesis_combo[i].reward_acumulative = reward_str(archnemesis_combo[i].reward_acumulative);
+    archnemesis_combo[i].ratio = (archnemesis_combo[i].reward_acumulative_value/archnemesis_combo[i].count);
   }
 }
 
@@ -327,12 +376,12 @@ function archnemesis_combo_raund() {
   archnemesis_combo_gen(first);
   archnemesis_combo_prosses();
 
-  archnemesis_combo.sort((a, b) => (a.reward_acumulative_value < b.reward_acumulative_value) ? 1 : -1)
-  archnemesis_combo = archnemesis_combo.slice(0,10)
+  archnemesis_combo.sort((a, b) => (a.ratio < b.ratio) ? 1 : -1)
+  archnemesis_combo = archnemesis_combo.slice(0,20)
   
   archnemesis_combo = archnemesis_combo.concat(archnemesis_combo_last)
-  archnemesis_combo.sort((a, b) => (a.reward_acumulative_value < b.reward_acumulative_value) ? 1 : -1)
-  archnemesis_combo = archnemesis_combo.slice(0,10)
+  archnemesis_combo.sort((a, b) => (a.ratio < b.ratio) ? 1 : -1)
+  archnemesis_combo = archnemesis_combo.slice(0,20)
   
 
   document.getElementById("archnemesis").innerHTML = archnemesis_table(archnemesis);
