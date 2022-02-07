@@ -10,7 +10,8 @@ Divination 0.5
 Harbinger 0.2
 Fragment 0.2
 Scarab 2
-Random 0.2 (Treant Hoard)
+Treant Hoard
+Random 8*(averege value of other rewords)
 
 Rerolls are based on experamental data (picking max between uniformly picked numbers)
 1: 1.333
