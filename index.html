@@ -2,18 +2,22 @@
 <html>
 <head>
 <title>Archnemesis</title>
-<style>
-table {
-  border-collapse: collapse;
-}
-tr, td {
-  border: 1px solid black;
-  padding: .2em;
-}
-</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <style>
+  body {
+    background-color: gray;
+    color: white;
+  }
+  .container-fluid {
+    padding: 4em;
+  }
+  </style>
 </head>
 <body>
-
+<div class="container-fluid bg-1">
 <h1>Archnemesis</h1>
 <div id="progress"></div>
 <p/>
@@ -23,10 +27,11 @@ tr, td {
 <div id="archnemesis_combo_per"></div>
 <h2>Archnemesis component</h2>
 <div id="archnemesis"></div>
+</div>
 <script>
 function archnemesis_table(archnemesis) {
   archnemesis_html="";
-  archnemesis_html+="<table style=\"\">";
+  archnemesis_html+="<table class=\"table table-bordered\">";
   archnemesis_html+="<tr><td>Index</td><td>Name</td><td>Tier</td><td>Base Components</td><td>Reward</td><td>Component</td></tr>";
   for (let i = 0; i < archnemesis.length; i++) {
     archnemesis_html+="<tr>";
@@ -44,7 +49,7 @@ function archnemesis_table(archnemesis) {
 
 function archnemesis_combo_table(archnemesis_combo) {
   archnemesis_combo_html="";
-  archnemesis_combo_html+="<table style=\"\">";
+  archnemesis_combo_html+="<table class=\"table table-bordered\">";
   archnemesis_combo_html+="<tr><td>Sequence</td><td>Value</td><td>Value/Base Components</td><td>Base Components</td><td>Rerolls</td><td>Reward Acumulative</td><td>Value Last</td><td>Reward Last</td></tr>";
   for (let i = 0; i < archnemesis_combo.length; i++) {
     archnemesis_combo_html+="<tr>";
@@ -164,6 +169,8 @@ function rerolls_factor(rerolls) {
 
 function reward_value(reward, rerolls) {
   let value = 0
+  let random = 0
+  let total = 0
   let reward_keys = Object.keys(reward)
   for (let k = 0; k < reward_keys.length; k++) {
     let reward_value = 0
@@ -184,9 +191,13 @@ function reward_value(reward, rerolls) {
     }else if(reward_keys[k] == "Scarab"){
       reward_value += 2;
     }else if(reward_keys[k] == "Random"){
-      reward_value += .2;
+      random = reward[reward_keys[k]];
     }
     value += reward_value * reward[reward_keys[k]];
+    total += reward[reward_keys[k]];
+  }
+  if (random > 0){
+    value += random*8*(value/total)
   }
   return value * rerolls_factor(rerolls);
 }
@@ -237,7 +248,7 @@ function archnemesis_combo_prosses() {
       else if (archnemesis[id].name == "Treant Hoard"){
         if (!("Random" in archnemesis_combo[i].reward))
           archnemesis_combo[i].reward["Random"] = 0;
-        archnemesis_combo[i].reward["Random"] += 8
+        archnemesis_combo[i].reward["Random"] += 1
       }else if ((archnemesis[id].name == "Lunaris-Touched") |
                 (archnemesis[id].name == "Solaris-Touched")){
         archnemesis_combo[i].additional_all += 1
@@ -376,7 +387,7 @@ let archnemesis_combo_last_per = [];
 let first = 0;
 
 function archnemesis_combo_raund() {
-  document.getElementById("progress").innerHTML = (first+1)+"/"+archnemesis.length;
+  document.getElementById("progress").innerHTML = "In Progress: "+(first+1)+"/"+archnemesis.length;
 
   archnemesis_combo_gen(first);
   archnemesis_combo_prosses();
@@ -400,11 +411,13 @@ function archnemesis_combo_raund() {
   
   first +=1
   if (first < archnemesis.length)
-    setTimeout(archnemesis_combo_raund, 1000);
+    setTimeout(archnemesis_combo_raund, 0);
+  else
+    document.getElementById("progress").innerHTML = "";
 }
 
 archnemesis_preprosses();
-archnemesis_combo_raund()
+setTimeout(archnemesis_combo_raund, 100);
 
 </script>
 </body>
