@@ -17,8 +17,11 @@ tr, td {
 <h1>Archnemesis</h1>
 <div id="progress"></div>
 <p/>
+<h2>Max value</h2>
 <div id="archnemesis_combo"></div>
-<p/>
+<h2>Max per base Component</h2>
+<div id="archnemesis_combo_per"></div>
+<h2>Archnemesis component</h2>
 <div id="archnemesis"></div>
 <script>
 function archnemesis_table(archnemesis) {
@@ -367,7 +370,9 @@ let archnemesis = [{name:"Toxic"              , reward:["Generic"    , "Gem"    
                    {name:"Kitava-Touched"     , reward:["Generic"                                                ], component:["Tukohama-Touched" , "Abberath-Touched" , "Corrupter"          , "Corpse Detonator" ]}];
 
 let archnemesis_combo = [];
+let archnemesis_combo_per = [];
 let archnemesis_combo_last = [];
+let archnemesis_combo_last_per = [];
 let first = 0;
 
 function archnemesis_combo_raund() {
@@ -376,18 +381,21 @@ function archnemesis_combo_raund() {
   archnemesis_combo_gen(first);
   archnemesis_combo_prosses();
 
-  archnemesis_combo.sort((a, b) => (a.ratio < b.ratio) ? 1 : -1)
-  archnemesis_combo = archnemesis_combo.slice(0,20)
-  
   archnemesis_combo = archnemesis_combo.concat(archnemesis_combo_last)
+  archnemesis_combo = archnemesis_combo.concat(archnemesis_combo_last_per)
+
   archnemesis_combo.sort((a, b) => (a.ratio < b.ratio) ? 1 : -1)
+  archnemesis_combo_per = archnemesis_combo.slice(0,20)
+
+  archnemesis_combo.sort((a, b) => (a.reward_acumulative_value < b.reward_acumulative_value) ? 1 : -1)
   archnemesis_combo = archnemesis_combo.slice(0,20)
-  
 
   document.getElementById("archnemesis").innerHTML = archnemesis_table(archnemesis);
   document.getElementById("archnemesis_combo").innerHTML = archnemesis_combo_table(archnemesis_combo);
+  document.getElementById("archnemesis_combo_per").innerHTML = archnemesis_combo_table(archnemesis_combo_per);
 
   archnemesis_combo_last = archnemesis_combo;
+  archnemesis_combo_last_per = archnemesis_combo_per;
   archnemesis_combo = [];
   
   first +=1
